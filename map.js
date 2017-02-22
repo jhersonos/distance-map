@@ -13,9 +13,10 @@ function getdistance(){
     
       directionsService.route(request, function(result, status) {
         if (status == google.maps.DirectionsStatus.OK) {
-          alert("ta bueno");
+          console.log("ta bueno");
         }
         console.log(result)
+        document.getElementById('distancia').value=result.routes[0].legs[0].distance.text;
       });
 }
 function openInfoWindow(marker) {
@@ -23,10 +24,6 @@ function openInfoWindow(marker) {
     var destino = markerLatLng.lat() +"," + markerLatLng.lng();
     document.getElementById('origin').value = destino; 
     infoWindow.setContent([
-        'La posicion del marcador es: ',
-        markerLatLng.lat(),
-        ', ',
-        markerLatLng.lng(),
         'Arrastrame y haz click para actualizar la posicion '
     ].join(''));
     infoWindow.open(map, marker);
@@ -36,10 +33,6 @@ function openInfoWindow2(marker) {
     var destino = markerLatLng.lat() +"," + markerLatLng.lng();
     document.getElementById('destiny').value = destino; 
     infoWindow.setContent([
-        'La posicion del marcador es: ',
-        markerLatLng.lat(),
-        ', ',
-        markerLatLng.lng(),
         'Arrastrame y haz click para actualizar la posicion '
     ].join(''));
     infoWindow.open(map, marker);
@@ -47,10 +40,60 @@ function openInfoWindow2(marker) {
 /************************************************/
 function initMap() {
   var map = new google.maps.Map(document.getElementById('map'), {
-    zoom: 13,
+    zoom: 15,
     center: {lat: -12.114194, lng: -77.044559}
   });
 
+/****/
+  var input = document.getElementById('pac-input');
+  var searchBox = new google.maps.places.SearchBox(input);
+  var markers = [];
+  map.controls[google.maps.ControlPosition.TOP_LEFT].push(input);
+
+  // Bias the SearchBox results towards current map's viewport.
+  map.addListener('bounds_changed', function() {
+    searchBox.setBounds(map.getBounds());
+  });
+
+searchBox.addListener('places_changed', function() {
+    var places = searchBox.getPlaces();
+
+    if (places.length == 0) {
+      return;
+    }
+
+    // Clear out the old markers.
+    markers.forEach(function(marker) {
+      marker.setMap(null);
+    });
+
+     var bounds = new google.maps.LatLngBounds();
+    places.forEach(function(place) {
+      var icon = {
+        url: place.icon,
+        size: new google.maps.Size(71, 71),
+        origin: new google.maps.Point(0, 0),
+        anchor: new google.maps.Point(17, 34),
+        scaledSize: new google.maps.Size(25, 25)
+      };
+
+      // Create a marker for each place.
+      markers.push(new google.maps.Marker({
+        map: map,
+        icon: icon,
+        title: place.name,
+        position: place.geometry.location
+      }));
+
+      if (place.geometry.viewport) {
+        // Only geocodes have viewport.
+        bounds.union(place.geometry.viewport);
+      } else {
+        bounds.extend(place.geometry.location);
+      }
+    });
+    map.fitBounds(bounds);
+  });
 /***calculate distance ***/
 
 var directionsService = new google.maps.DirectionsService();
